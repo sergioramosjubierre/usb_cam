@@ -65,6 +65,9 @@ public:
   UsbCam cam_;
 
   ros::ServiceServer service_start_, service_stop_;
+  ros::ServiceServer service_picture_, service_take_picture_;
+  bool is_take_picture_, is_picture_mode_;
+
 
 
 
@@ -78,6 +81,20 @@ public:
   bool service_stop_cap( std_srvs::Empty::Request  &req, std_srvs::Empty::Response &res )
   {
     cam_.stop_capturing();
+    return true;
+  }
+
+
+  bool service_start_pic(std_srvs::Empty::Request  &req, std_srvs::Empty::Response &res )
+  {
+    is_picture_mode_ = true;
+    cam_.start_capturing();
+    return true;
+  }
+
+  bool service_take_picture( std_srvs::Empty::Request  &req, std_srvs::Empty::Response &res )
+  {
+    is_take_picture_ = true;
     return true;
   }
 
@@ -121,6 +138,8 @@ public:
     // create Services
     service_start_ = node_.advertiseService("start_capture", &UsbCamNode::service_start_cap, this);
     service_stop_ = node_.advertiseService("stop_capture", &UsbCamNode::service_stop_cap, this);
+    service_picture_ = node_.advertiseService("start_picture", &UsbCamNode::service_start_pic, this);
+    service_take_picture_ = node_.advertiseService("take_picture", &UsbCamNode::service_take_picture, this);
 
     // check for default camera info
     if (!cinfo_->isCalibrated())
@@ -230,6 +249,12 @@ public:
   {
     // grab the image
     cam_.grab_image(&img_);
+
+    if (is_picture_mode_ && !is_take_picture_)
+    {
+      return true;
+    }
+    is_take_picture_ = false;
 
     // grab the camera info
     sensor_msgs::CameraInfoPtr ci(new sensor_msgs::CameraInfo(cinfo_->getCameraInfo()));
